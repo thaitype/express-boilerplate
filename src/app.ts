@@ -2,8 +2,6 @@ import express from 'express';
 import { config } from './configs/config.js';
 import helmet from 'helmet';
 import cors from 'cors';
-// @ts-ignore
-import xss from 'xss-clean';
 import compression from 'compression';
 import { morganHandler } from './configs/morgan.js';
 import routes from './routes/index.js';
@@ -27,9 +25,6 @@ app.use(express.json());
 // parse urlencoded request body
 app.use(express.urlencoded({ extended: true }));
 
-// sanitize request data
-app.use(xss());
-
 // gzip compression
 app.use(compression());
 
@@ -40,10 +35,10 @@ app.options('*', cors());
 // v1 api routes
 app.use('/api', routes);
 
-// // send back a 404 error for any unknown api request
-// app.use((req, res, next) => {
-//   next(new ApiError(httpStatus.NOT_FOUND, 'Not found'));
-// });
+// send back a 404 error for any unknown api request
+app.use((req, res, next) => {
+  next(new ApiError(httpStatus.NOT_FOUND, 'Not found'));
+});
 
 // convert error to ApiError, if needed
 app.use(errorConverter);

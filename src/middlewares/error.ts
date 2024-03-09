@@ -5,33 +5,30 @@ import { ApiError } from '../utils/ApiError.js';
 import type { Request, Response, NextFunction } from 'express';
 
 const errorConverter = (err: any, req: Request, res: Response, next: NextFunction): void => {
-  
   let error = err;
-  console.log('xxxx', typeof error, error.message, error.stack, error.statusCode, error.isOperational);
-//   if(!(error instanceof Error)) {
-//     const message = String(error);
-//     error = new ApiError(httpStatus.INTERNAL_SERVER_ERROR, message, false, undefined);
-//     return  next(error);
-//   }
   if (!(error instanceof ApiError)) {
-
-
-    const statusCode =
-      error.statusCode ? httpStatus.BAD_REQUEST : httpStatus.INTERNAL_SERVER_ERROR;
+    const statusCode = error.statusCode ? httpStatus.BAD_REQUEST : httpStatus.INTERNAL_SERVER_ERROR;
     const message = error.message || httpStatus[statusCode];
     error = new ApiError(statusCode, message, false, err.stack);
   }
   next(error);
 };
 
-const errorHandler = (err: any, req: Request, res: Response): void => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const errorHandler = (err: unknown, req: Request, res: Response, next: NextFunction) => {
+  if (!(err instanceof ApiError)) {
+    logger.error(err);
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+      code: httpStatus.INTERNAL_SERVER_ERROR,
+      message: 'Error handler type is not ApiError. Please check the error handler.',
+    });
+  }
   let { statusCode, message } = err;
+  console.log('statusCode', statusCode, message);
   if (config.env === 'production' && !err.isOperational) {
     statusCode = httpStatus.INTERNAL_SERVER_ERROR;
     message = httpStatus[httpStatus.INTERNAL_SERVER_ERROR];
   }
-
-  res.locals.errorMessage = err.message;
 
   const response = {
     code: statusCode,
@@ -43,7 +40,7 @@ const errorHandler = (err: any, req: Request, res: Response): void => {
     logger.error(err);
   }
 
-  res.status(statusCode).send(response);
+  return res.status(statusCode).send(response);
 };
 
 export { errorConverter, errorHandler };
